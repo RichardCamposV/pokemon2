@@ -16,8 +16,112 @@ def any_player_pokemon_lives(player_profile):
     return sum([pokemon["current_health"] for pokemon in player_profile["pokemon_inventory"]]) > 0
 
 
-def fight_nate(player_profile, enemy_pokemon):
+def choose_pokemon(player_profile):
+    chosen = None
+    while not chosen:
+        print("Elige con que pokemon lucharás")
+        for index in range(len(player_profile["pokemon_inventory"])):
+            print("{} - {}".format(index, get_pokemon_info(player_profile["pokemon_inventory"][index])))
+        try:
+            return player_profile["pokemon_inventory"][int(input("¿Cuál eliges? "))]
+        except (ValueError, IndexError):
+            print("Opcion invalida")
+
+
+def get_pokemon_info(pokemon):
+    return "{} | lvl {} | hp {}/{}".format(pokemon["name"], pokemon["level"], pokemon["current_health"],
+                                           pokemon["base_health"])
+
+
+def player_attack(player_pokemon, enemy_pokemon):
+    """Implementate multipliers for pokemon type base
+    Normal: Debil frente a Lucha
+    Fuego: debil frente a Agua, Tierra, Roca
+    Agua: debil frente a planta, electrico
+    Planta: debil frente a fuego, hielo, veneno, volador, bicho
+    Electrico: debil frente a Tierra
+    Hielo: debil frente a fuego, lucha, roca, acero
+    Lucha: debil frente a volador, psiquico, hada
+    Veneno: debil frente a tierra, psiquico
+    Tierra: debil frente a Agua, planta, hielo
+    Volador: debil frente a electrico, hielo, roca
+    Psiquico: debil frente a bicho, fantasma, siniestro
+    Bicho: debil frente a volador, roca, fuego
+    Roca: debil frente a agua, planta, lucha, tierra, acero
+    Fantasma: debil frente a fantasma, siniestro
+    Dragon: debil frente a Hielo, Dragon, Hada
+    Siniestro: debil frente a lucha, bicho, hada
+    Acero: debil frente a fuego, lucha, tierra
+    Hada: debil frente a veneno, acero
+
+    Multipliers = * 1.25
+    When the user select attacks, only show the available attacks for that level 
+    """
     pass
+
+
+def enemy_attack(enemy_pokemon, player_pokemon):
+    pass
+
+
+def assign_experience(attack_history):
+    for pokemon in attack_history:
+        points = random.randint(1, 5)
+        pokemon["current_exp"] += points
+
+        while pokemon["current_exp"] > 20:
+            pokemon["current_exp"] -= 20
+            pokemon["level"] += 1
+            pokemon["current_healt"] = pokemon["base_health"]
+            print("Tu pokemon ha subido al nivel {}".format(get_pokemon_info(pokemon)))
+
+
+def cure_pokemon(player_profile, player_pokemon):
+    pass
+
+
+def capture_with_pokeball(player_profile, enemy_pokemon):
+    pass
+
+
+def fight_nate(player_profile, enemy_pokemon):
+    print("--- NUEVO COMBATE ---")
+
+    attack_history = []
+    player_pokemon = choose_pokemon(player_profile)
+    print("Contrincantes: {} VS {}".format(get_pokemon_info(player_pokemon), get_pokemon_info(enemy_pokemon)))
+
+    while any_player_pokemon_lives(player_profile) and enemy_pokemon["current_health"] > 0:
+        action = None
+        while action not in ["A", "P", "V", "C"]:
+            action = input("Que deseas hacer: [A]tacar, [P]okeball, Poción de [V]ida, [C]ambiar")
+
+        if action == "A":
+            player_attack(player_pokemon, enemy_pokemon)
+            attack_history.append(player_pokemon)
+        elif action == "V":
+            # If the user have cures in the inventory, aplicate, health 50 life upon to 100
+            # If the user doesn't have, not cure
+            cure_pokemon(player_profile, player_pokemon)
+        elif action == "P":
+            # If the user have pokeballs in the inventory, roll one, it have a probability to capture
+            # relative for the pokemon remaining health, when is capture, pass to the inventory with the same health
+            # it had
+            capture_with_pokeball(player_profile, enemy_pokemon)
+        elif action == "C":
+            player_pokemon = choose_pokemon(player_profile)
+
+        enemy_attack(enemy_pokemon, player_pokemon)
+
+        if player_pokemon["current_health"] == 0 and any_player_pokemon_lives(player_profile):
+            player_pokemon = choose_pokemon(player_profile)
+
+    if enemy_pokemon["current_health"] == 0:
+        print("Has ganado!")
+        assign_experience(attack_history)
+
+    print("--- FIN DEL COMBATE ---")
+    input("Presiona ENTER para continuar")
 
 
 def fight_rcv(player_profile, enemy_pokemon):
@@ -37,6 +141,7 @@ def fight_rcv(player_profile, enemy_pokemon):
     actual_pokemon = []
     attacks_pokemon_user = []
 
+    print("--- NUEVO COMBATE ---\n")
     print("Te has encontrado con {}, y quiere pelear!!!\n".format(enemy_pokemon["name"]))
     print("Selecciona un pokemon para pelear: ")
     for pokemon in player_profile["pokemon_inventory"]:
@@ -84,9 +189,16 @@ def fight_rcv(player_profile, enemy_pokemon):
     if enemy_pokemon["current_health"] <= 0:
         print("\n---Player Win---\n"
               "{} murio!\n".format(enemy_pokemon["name"]))
+        print("\n--- FIN DEL COMBATE ---\n\n")
     elif actual_pokemon[0]["current_health"] <= 0:
         print("\n---Enemy Win---\n"
               "{} murio!\n".format(actual_pokemon[0]["name"]))
+        print("\n--- FIN DEL COMBATE ---\n\n")
+
+
+def item_lottery(player_profile):
+    """ Random factor, the player could get a pokeball or a cure """
+    pass
 
 
 def main():
@@ -95,7 +207,9 @@ def main():
 
     while any_player_pokemon_lives(player_profile):
         enemy_pokemon = random.choice(pokemon_list)
-        fight_rcv(player_profile, enemy_pokemon)
+        # fight_rcv(player_profile, enemy_pokemon)
+        fight_nate(player_profile, enemy_pokemon)
+        item_lottery(player_profile)
     print("Has perdido en el combate n°{}".format(player_profile["combats"]))
 
 
